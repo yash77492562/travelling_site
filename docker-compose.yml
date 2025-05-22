@@ -1,0 +1,56 @@
+version: '3.8'
+
+services:
+  # MongoDB Database
+  mongodb:
+    image: mongo:6.0
+    container_name: travel_mongodb
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    environment:
+      # Option 1: With authentication
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: password123
+      MONGO_INITDB_DATABASE: traveldb
+      
+      # Option 2: Without authentication (comment out above lines)
+      # MONGO_INITDB_DATABASE: traveldb
+    volumes:
+      - mongodb_data:/data/db
+      - ./mongo-init.js:/docker-entrypoint-initdb.d/mongo-init.js:ro
+    networks:
+      - travel-network
+
+  # MongoDB Express (Optional - for database management UI)
+  mongo-express:
+    image: mongo-express:latest
+    container_name: travel_mongo_express
+    restart: unless-stopped
+    ports:
+      - "8081:8081"
+    environment:
+      # For authenticated MongoDB
+      ME_CONFIG_MONGODB_ADMINUSERNAME: admin
+      ME_CONFIG_MONGODB_ADMINPASSWORD: password123
+      ME_CONFIG_MONGODB_URL: mongodb://admin:password123@mongodb:27017/
+      ME_CONFIG_BASICAUTH_USERNAME: admin
+      ME_CONFIG_BASICAUTH_PASSWORD: admin123
+      
+      # For non-authenticated MongoDB (uncomment if no auth)
+      # ME_CONFIG_MONGODB_SERVER: mongodb
+      # ME_CONFIG_MONGODB_PORT: 27017
+      # ME_CONFIG_BASICAUTH_USERNAME: admin
+      # ME_CONFIG_BASICAUTH_PASSWORD: admin123
+    depends_on:
+      - mongodb
+    networks:
+      - travel-network
+
+volumes:
+  mongodb_data:
+    driver: local
+
+networks:
+  travel-network:
+    driver: bridge
