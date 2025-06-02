@@ -18,6 +18,7 @@ export const StatusCode = {
   HTTP_TOO_MANY_REQUESTS: HttpStatus.TOO_MANY_REQUESTS,
   HTTP_INTERNAL_SERVER_ERROR: HttpStatus.INTERNAL_SERVER_ERROR,
   HTTP_VALIDATION_EMAIL_VARIFIED: HttpStatus.OK,
+  HTTP_FORBIDDEN: HttpStatus.FORBIDDEN
 };
 
 export const StatusMessage = {

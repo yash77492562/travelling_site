@@ -2,11 +2,19 @@ import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { MongooseModule } from '@nestjs/mongoose';
 import { ThrottlerModule } from '@nestjs/throttler';
+import { APP_GUARD } from '@nestjs/core';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { CommonConfig } from './config/CommonConfig';
+import { CommonModule } from './api/common/commonModule';
+import {RateLimitGuard} from './api/common/guards/rate-limit.guard'
 // Import Modules
-import {UsersModule} from './api/UserModule/user.module';
+import { UserModule } from './api/UserModule/user.module';
+import { AuthModule } from './api/AuthModule/auth.module';
+import { TourPackagesModule } from './api/TourPackagesModule/tourPackage.module';
+import { BookingsModule } from './api/BookingModule/booking.module';
+import { AdminModule } from './api/AdminModule/admin.module';
+import { NewsletterModule } from './api/NewsletterModule/newsletter.module';
 // Import Schemas
 import { User, UserSchema } from './schemas/user.schema';
 import { TourPackage, TourPackageSchema } from './schemas/tour-package.schema';
@@ -39,16 +47,25 @@ import { SiteSettings, SiteSettingsSchema } from './schemas/site-settings.schema
       ttl: 60000, // 1 minute
       limit: 100, // 100 requests per minute
     }]),
-    UsersModule
-    // TODO: Add feature modules here
-    // AuthModule,
-    // TourPackagesModule,
-    // BookingsModule,
+    
+    // Import feature modules
+    CommonModule,
+    UserModule,
+    AuthModule,
+    TourPackagesModule,
+    BookingsModule,
+    AdminModule,
     // PaymentsModule,
-    // AdminModule,
-    // NewsletterModule,
+    NewsletterModule,
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [
+    AppService,
+    // Register RateLimitGuard globally using APP_GUARD token
+    {
+      provide: APP_GUARD,
+      useClass: RateLimitGuard,
+    },
+  ],
 })
 export class AppModule {}

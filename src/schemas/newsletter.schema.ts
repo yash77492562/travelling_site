@@ -8,10 +8,10 @@ export class Newsletter {
     email: string;
 
     @Prop()
-    name: string;
+    name?: string;
 
     @Prop()
-    phone: string;
+    phone?: string;
 
     @Prop({ type: Boolean, default: true })
     is_active: boolean;
@@ -20,25 +20,25 @@ export class Newsletter {
     is_synced_with_zoho: boolean;
 
     @Prop()
-    zoho_contact_id: string;
+    zoho_contact_id?: string;
 
     @Prop({ type: Date, default: Date.now })
     subscribed_at: Date;
 
     @Prop({ type: Date })
-    unsubscribed_at: Date;
+    unsubscribed_at?: Date;
 
     @Prop()
-    unsubscribe_reason: string;
+    unsubscribe_reason?: string;
 
     @Prop()
-    source: string; // 'website', 'admin', 'import', etc.
+    source?: string; // 'website', 'admin', 'import', etc.
 
     @Prop([String])
-    interests: string[]; // Tour categories they're interested in
+    interests?: string[]; // Tour categories they're interested in
 
     @Prop()
-    last_email_sent: Date;
+    last_email_sent?: Date;
 
     @Prop({ default: 0 })
     email_open_count: number;
@@ -50,7 +50,7 @@ export class Newsletter {
     is_deleted: boolean;
 
     @Prop({ type: Date })
-    is_deleted_date: Date;
+    is_deleted_date?: Date;
 }
 
 export const NewsletterSchema = SchemaFactory.createForClass(Newsletter);

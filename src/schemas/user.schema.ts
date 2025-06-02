@@ -12,7 +12,10 @@ export class User extends Document {
   email: string;
 
   @Prop({ required: true, minlength: 6, maxlength: 100 })
-  password?: string;
+  password: string;
+  
+  @Prop({ default: false })
+  blocked: boolean;
 
   @Prop({ min: 1, max: 9999 })
   phone_code?: number;
@@ -87,6 +90,12 @@ export class User extends Document {
 
   @Prop()
   phone?: string;
+
+  @Prop({ type: Date, default: Date.now })
+  createdAt: Date;
+
+  @Prop({ type: Date, default: Date.now })
+  updatedAt: Date;
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);

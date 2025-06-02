@@ -1,244 +1,126 @@
+
+// user/user.controller.ts
 import {
   Controller,
   Get,
-  Post,
-  Body,
   Patch,
-  Param,
+  Post,
   Delete,
-  Query,
-  HttpStatus,
-  HttpException
+  Body,
+  Request,
+  UseGuards,
+  HttpException,
 } from '@nestjs/common';
-import { UsersService } from './users.service';
-import { CreateUserDto } from './create-user.dto';
-import { UpdateUserDto } from './update-user.dto';
-import { StatusCode, StatusMessage } from '../../constants/HttpConstant';
-import { MessageConstant } from '../../constants/MessageConstant';
+import { UserService } from './users.service';
+import { ChangePasswordDto } from './user.change-password.dto';
+import { ResetPasswordDto } from './user.reset-password.dto';
+import { UpdateProfileDto } from './update-profile.dto';
+import { JwtAuthGuard } from '../AuthModule/jwt-auth.guard';
+import { StatusCode } from '../../constants/HttpConstant';
 
+@Controller('user')
+export class UserController {
+  constructor(private readonly userService: UserService) {}
 
-
-@Controller('users')
-export class UsersController {
-  constructor(private readonly usersService: UsersService) {}
-
-  @Post()
-  async create(@Body() createUserDto: CreateUserDto) {
+  @Get('profile')
+  @UseGuards(JwtAuthGuard)
+  async getProfile(@Request() req) {
     try {
-      const user = await this.usersService.create(createUserDto);
-      return {
-        statusCode: StatusCode.HTTP_CREATED,
-        message: MessageConstant.CREATE_SUCCESSFULLY,
-        data: user,
-      };
-    } catch (error) {
-      throw new HttpException(
-        {
-          statusCode: StatusCode.HTTP_BAD_REQUEST,
-          message: error.message || StatusMessage.HTTP_BAD_REQUEST,
-        },
-        StatusCode.HTTP_BAD_REQUEST,
-      );
-    }
-  }
-
-  @Get()
-  async findAll(
-    @Query('page') page: number = 1,
-    @Query('limit') limit: number = 10,
-    @Query('status') status?: boolean,
-    @Query('role') role?: number,
-  ) {
-    try {
-      const result = await this.usersService.findAll({
-        page: Number(page),
-        limit: Number(limit),
-        status,
-        role: role ? Number(role) : undefined,
-      });
+      console.log(req.user, 'req.user');
+      const user = await this.userService.getProfile(req.user.sub);
       return {
         statusCode: StatusCode.HTTP_OK,
-        message: MessageConstant.FATCH_SUCCESS,
-        data: result,
-      };
-    } catch (error) {
-      throw new HttpException(
-        {
-          statusCode: StatusCode.HTTP_INTERNAL_SERVER_ERROR,
-          message: error.message || StatusMessage.HTTP_INTERNAL_SERVER_ERROR,
-        },
-        StatusCode.HTTP_INTERNAL_SERVER_ERROR,
-      );
-    }
-  }
-
-  @Get(':id')
-  async findOne(@Param('id') id: string) {
-    try {
-      const user = await this.usersService.findOne(id);
-      if (!user) {
-        throw new HttpException(
-          {
-            statusCode: StatusCode.HTTP_NOT_FOUND,
-            message: MessageConstant.DATA_NOT_FOUND,
-          },
-          StatusCode.HTTP_NOT_FOUND,
-        );
-      }
-      return {
-        statusCode: StatusCode.HTTP_OK,
-        message: MessageConstant.FATCH_SUCCESS,
+        message: 'Profile retrieved successfully',
         data: user,
       };
     } catch (error) {
       throw new HttpException(
         {
           statusCode: error.status || StatusCode.HTTP_INTERNAL_SERVER_ERROR,
-          message: error.message || StatusMessage.HTTP_INTERNAL_SERVER_ERROR,
+          message: error.message || 'Failed to get profile',
         },
         error.status || StatusCode.HTTP_INTERNAL_SERVER_ERROR,
       );
     }
   }
 
-  @Patch(':id')
-  async update(@Param('id') id: string, @Body() updateUserDto: UpdateUserDto) {
+  @Patch('profile')
+  @UseGuards(JwtAuthGuard)
+  async updateProfile(@Request() req, @Body() updateProfileDto: UpdateProfileDto) {
     try {
-      const user = await this.usersService.update(id, updateUserDto);
-      if (!user) {
-        throw new HttpException(
-          {
-            statusCode: StatusCode.HTTP_NOT_FOUND,
-            message: MessageConstant.DATA_NOT_FOUND,
-          },
-          StatusCode.HTTP_NOT_FOUND,
-        );
-      }
+      const user = await this.userService.updateProfile(req.user.sub, updateProfileDto);
       return {
         statusCode: StatusCode.HTTP_OK,
-        message: MessageConstant.UPDATED_SUCCESS,
+        message: 'Profile updated successfully',
         data: user,
       };
     } catch (error) {
       throw new HttpException(
         {
           statusCode: error.status || StatusCode.HTTP_BAD_REQUEST,
-          message: error.message || 'Failed to update user',
+          message: error.message || 'Profile update failed',
         },
         error.status || StatusCode.HTTP_BAD_REQUEST,
       );
     }
   }
 
-  @Delete(':id')
-  async remove(@Param('id') id: string) {
+  @Patch('change-password')
+  @UseGuards(JwtAuthGuard)
+  async changePassword(@Request() req, @Body() changePasswordDto: ChangePasswordDto) {
     try {
-      const result = await this.usersService.remove(id);
-      if (!result) {
-        throw new HttpException(
-          {
-            statusCode: StatusCode.HTTP_NOT_FOUND,
-            message: 'User not found',
-          },
-          StatusCode.HTTP_NOT_FOUND,
-        );
-      }
-      return {
-        statusCode: HttpStatus.OK,
-        message: 'User deleted successfully',
-      };
-    } catch (error) {
-      throw new HttpException(
-        {
-          statusCode: error.status || StatusCode.HTTP_INTERNAL_SERVER_ERROR,
-          message: error.message || 'Failed to delete user',
-        },
-        error.status || StatusCode.HTTP_INTERNAL_SERVER_ERROR,
-      );
-    }
-  }
-
-  @Patch(':id/soft-delete')
-  async softDelete(@Param('id') id: string) {
-    try {
-      const user = await this.usersService.softDelete(id);
-      if (!user) {
-        throw new HttpException(
-          {
-            statusCode: StatusCode.HTTP_NOT_FOUND,
-            message: 'User not found',
-          },
-          StatusCode.HTTP_NOT_FOUND,
-        );
-      }
-      return {
-        statusCode: HttpStatus.OK,
-        message: 'User soft deleted successfully',
-        data: user,
-      };
-    } catch (error) {
-      throw new HttpException(
-        {
-          statusCode: error.status || StatusCode.HTTP_INTERNAL_SERVER_ERROR,
-          message: error.message || 'Failed to soft delete user',
-        },
-        error.status || StatusCode.HTTP_INTERNAL_SERVER_ERROR,
-      );
-    }
-  }
-
-  @Patch(':id/restore')
-  async restore(@Param('id') id: string) {
-    try {
-      const user = await this.usersService.restore(id);
-      if (!user) {
-        throw new HttpException(
-          {
-            statusCode: StatusCode.HTTP_NOT_FOUND,
-            message: 'User not found',
-          },
-          StatusCode.HTTP_NOT_FOUND,
-        );
-      }
+      const result = await this.userService.changePassword(req.user.sub, changePasswordDto);
       return {
         statusCode: StatusCode.HTTP_OK,
-        message: 'User restored successfully',
-        data: user,
+        message: 'Password changed successfully',
+        data: result,
       };
     } catch (error) {
       throw new HttpException(
         {
-          statusCode: error.status || StatusCode.HTTP_INTERNAL_SERVER_ERROR,
-          message: error.message || 'Failed to restore user',
+          statusCode: error.status || StatusCode.HTTP_BAD_REQUEST,
+          message: error.message || 'Password change failed',
         },
-        error.status || StatusCode.HTTP_INTERNAL_SERVER_ERROR,
+        error.status || StatusCode.HTTP_BAD_REQUEST,
       );
     }
   }
 
-  @Get('email/:email')
-  async findByEmail(@Param('email') email: string) {
+  @Post('reset-password')
+  async resetPassword(@Body() resetPasswordDto: ResetPasswordDto) {
     try {
-      const user = await this.usersService.findByEmail(email);
-      if (!user) {
-        throw new HttpException(
-          {
-            statusCode: StatusCode.HTTP_NOT_FOUND,
-            message: 'User not found',
-          },
-          StatusCode.HTTP_NOT_FOUND,
-        );
-      }
+      const result = await this.userService.resetPassword(resetPasswordDto);
       return {
         statusCode: StatusCode.HTTP_OK,
-        message: 'User retrieved successfully',
-        data: user,
+        message: 'Password reset successfully',
+        data: result,
+      };
+    } catch (error) {
+      throw new HttpException(
+        {
+          statusCode: error.status || StatusCode.HTTP_BAD_REQUEST,
+          message: error.message || 'Password reset failed',
+        },
+        error.status || StatusCode.HTTP_BAD_REQUEST,
+      );
+    }
+  }
+
+  @Delete('account')
+  @UseGuards(JwtAuthGuard)
+  async deleteAccount(@Request() req) {
+    try {
+      const result = await this.userService.deleteAccount(req.user.sub);
+      return {
+        statusCode: StatusCode.HTTP_OK,
+        message: 'Account deleted successfully',
+        data: result,
       };
     } catch (error) {
       throw new HttpException(
         {
           statusCode: error.status || StatusCode.HTTP_INTERNAL_SERVER_ERROR,
-          message: error.message || 'Failed to retrieve user',
+          message: error.message || 'Account deletion failed',
         },
         error.status || StatusCode.HTTP_INTERNAL_SERVER_ERROR,
       );

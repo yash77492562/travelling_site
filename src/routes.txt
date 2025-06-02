@@ -1,0 +1,758 @@
+# API Routes Documentation
+
+## 1. Config Controller Routes (`/admin/config`)
+
+### Authentication Required
+- **Headers**: JWT token required for all routes
+- **Role Required**: Admin only (role = 1)
+
+```javascript
+// Headers for all admin routes
+{
+  "Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "Content-Type": "application/json"
+}
+```
+
+### GET `/admin/config`
+Get all configuration values
+
+**Example Request:**
+```bash
+GET /admin/config
+Headers: {
+  "Authorization": "Bearer your_jwt_token"
+}
+```
+
+**Example Response:**
+```json
+{
+  "zoho_access_token": "value",
+  "zoho_refresh_token": "value",
+  "other_configs": "..."
+}
+```
+
+### POST `/admin/config`
+Set a configuration value
+
+**Example Request:**
+```bash
+POST /admin/config
+Headers: {
+  "Authorization": "Bearer your_jwt_token",
+  "Content-Type": "application/json"
+}
+Body: {
+  "key": "zoho_access_token",
+  "value": "1000.abc123def456...",
+  "expiresAt": "2025-06-02T10:30:00.000Z"
+}
+```
+
+**Example Response:**
+```json
+{
+  "message": "Config value set successfully",
+  "key": "zoho_access_token"
+}
+```
+
+### GET `/admin/config/:key`
+Get a specific configuration value
+
+**Example Request:**
+```bash
+GET /admin/config/zoho_access_token
+Headers: {
+  "Authorization": "Bearer your_jwt_token"
+}
+```
+
+**Example Response:**
+```json
+{
+  "key": "zoho_access_token",
+  "value": "1000.abc123def456...",
+  "exists": true
+}
+```
+
+### DELETE `/admin/config/:key`
+Delete a configuration value
+
+**Example Request:**
+```bash
+DELETE /admin/config/zoho_access_token
+Headers: {
+  "Authorization": "Bearer your_jwt_token"
+}
+```
+
+**Response:** 204 No Content
+
+### DELETE `/admin/config/zoho-tokens`
+Clear all Zoho tokens
+
+**Example Request:**
+```bash
+DELETE /admin/config/zoho-tokens
+Headers: {
+  "Authorization": "Bearer your_jwt_token"
+}
+```
+
+**Example Response:**
+```json
+{
+  "message": "Zoho tokens cleared successfully. Re-authorization required."
+}
+```
+
+### GET `/admin/config/zoho-tokens/status`
+Get Zoho token status
+
+**Example Request:**
+```bash
+GET /admin/config/zoho-tokens/status
+Headers: {
+  "Authorization": "Bearer your_jwt_token"
+}
+```
+
+**Example Response:**
+```json
+{
+  "message": "Zoho token status retrieved",
+  "hasAccessToken": true,
+  "accessTokenExpired": false,
+  "hasRefreshToken": true,
+  "refreshTokenExpired": false
+}
+```
+
+---
+
+## 2. Zoho Auth Controller Routes (`/auth/zoho`)
+
+### GET `/auth/zoho/authorize`
+Initiate OAuth flow (redirects to Zoho)
+
+**Example Request:**
+```bash
+GET /auth/zoho/authorize
+```
+
+**Response:** Redirects to Zoho OAuth URL
+
+### GET `/auth/zoho/callback`
+Handle OAuth callback (called by Zoho)
+
+**Example Request:**
+```bash
+GET /auth/zoho/callback?code=1000.abc123def456...
+```
+
+**Example Response:**
+```json
+{
+  "message": "Successfully authorized with Zoho!",
+  "success": true,
+  "tokens": {
+    "access_token": "Received",
+    "refresh_token": "Received",
+    "expires_in": 3600
+  },
+  "next_steps": [
+    "Tokens have been automatically stored and configured",
+    "The system will auto-refresh access tokens as needed",
+    "Check /auth/zoho/admin-dashboard for monitoring"
+  ]
+}
+```
+
+### GET `/auth/zoho/status`
+Quick status check
+
+**Example Request:**
+```bash
+GET /auth/zoho/status
+```
+
+**Example Response (Success):**
+```json
+{
+  "message": "Zoho integration is active",
+  "hasValidToken": true,
+  "tokenStatus": "Active",
+  "accessTokenExpiresIn": "45 minutes",
+  "refreshTokenExpiresIn": "90 days",
+  "lastChecked": "2025-06-01T10:30:00.000Z"
+}
+```
+
+**Example Response (Not Configured):**
+```json
+{
+  "message": "Zoho integration not configured or tokens expired",
+  "hasValidToken": false,
+  "error": "No refresh token available",
+  "action_required": "Visit /auth/zoho/admin-dashboard for renewal instructions"
+}
+```
+
+### GET `/auth/zoho/admin-dashboard`
+Comprehensive admin dashboard
+
+**Example Request:**
+```bash
+GET /auth/zoho/admin-dashboard
+```
+
+**Example Response:**
+```json
+{
+  "status": {
+    "health": "HEALTHY - All tokens valid",
+    "isHealthy": true,
+    "isCritical": false,
+    "lastUpdated": "2025-06-01T10:30:00.000Z"
+  },
+  "tokens": {
+    "access_token": {
+      "available": true,
+      "expired": false,
+      "expiresIn": "45 minutes",
+      "expiresAt": "2025-06-01T12:15:00.000Z",
+      "autoRefresh": "Enabled - Will refresh automatically 10 minutes before expiry"
+    },
+    "refresh_token": {
+      "available": true,
+      "expired": false,
+      "expiresIn": "89 days, 12 hours",
+      "expiresAt": "2025-08-30T10:30:00.000Z",
+      "warningThreshold": "30 days",
+      "criticalThreshold": "7 days"
+    }
+  },
+  "system": {
+    "initialized": true,
+    "autoRefreshEnabled": true,
+    "lastRefreshAttempt": "2025-06-01T09:45:00.000Z",
+    "consecutiveFailures": 0,
+    "inBackoffPeriod": false,
+    "cronJobStatus": "Active - Runs every 30 minutes"
+  },
+  "actionItems": [],
+  "quickActions": [
+    {
+      "action": "Test Connection",
+      "endpoint": "GET /auth/zoho/test-connection",
+      "description": "Test if current tokens work with Zoho API"
+    },
+    {
+      "action": "Force Refresh",
+      "endpoint": "POST /auth/zoho/force-refresh",
+      "description": "Manually refresh access token now"
+    }
+  ],
+  "notifications": []
+}
+```
+
+### GET `/auth/zoho/test-connection`
+Test API connection
+
+**Example Request:**
+```bash
+GET /auth/zoho/test-connection
+```
+
+**Example Response (Success):**
+```json
+{
+  "status": "SUCCESS",
+  "message": "Zoho API connection is working properly",
+  "organization": "Your Company Name",
+  "tokenStatus": "Valid",
+  "testedAt": "2025-06-01T10:30:00.000Z",
+  "responseTime": "250ms"
+}
+```
+
+**Example Response (Failed):**
+```json
+{
+  "status": "FAILED",
+  "message": "Zoho API connection test failed",
+  "error": "Invalid authentication token",
+  "recommendation": "Check token status and consider refreshing or renewing tokens",
+  "actionRequired": "Visit /auth/zoho/admin-dashboard for guidance",
+  "testedAt": "2025-06-01T10:30:00.000Z"
+}
+```
+
+### POST `/auth/zoho/force-refresh`
+Force refresh access token
+
+**Example Request:**
+```bash
+POST /auth/zoho/force-refresh
+Headers: {
+  "Content-Type": "application/json"
+}
+Body: {}
+```
+
+**Example Response (Success):**
+```json
+{
+  "status": "SUCCESS",
+  "message": "Access token refreshed successfully",
+  "tokenStatus": "New token active",
+  "expiresIn": "60 minutes",
+  "refreshedAt": "2025-06-01T10:30:00.000Z"
+}
+```
+
+### GET `/auth/zoho/renewal-url`
+Get renewal URL for admin
+
+**Example Request:**
+```bash
+GET /auth/zoho/renewal-url
+```
+
+**Example Response:**
+```json
+{
+  "message": "Authorization URL for token renewal",
+  "authUrl": "https://accounts.zoho.in/oauth/v2/auth?response_type=code&client_id=...",
+  "instructions": [
+    "Click the authorization URL",
+    "Complete OAuth flow",
+    "System will automatically capture new tokens"
+  ],
+  "callbackInfo": {
+    "url": "https://yourapp.com/auth/zoho/callback",
+    "method": "GET"
+  },
+  "expiresIn": "10 minutes",
+  "generatedAt": "2025-06-01T10:30:00.000Z"
+}
+```
+
+### GET `/auth/zoho/refresh` (Deprecated)
+Manual refresh token endpoint
+
+**Example Request:**
+```bash
+GET /auth/zoho/refresh
+```
+
+**Note:** This endpoint is deprecated. Use `POST /auth/zoho/force-refresh` instead.
+
+---
+
+## 3. Newsletter Controller Routes (`/newsletter`)
+
+### Public Routes (No Authentication Required)
+
+### POST `/newsletter/subscribe`
+Subscribe to newsletter
+
+**Example Request:**
+```bash
+POST /newsletter/subscribe
+Headers: {
+  "Content-Type": "application/json"
+}
+Body: {
+  "email": "user@example.com",
+  "firstName": "John",
+  "lastName": "Doe",
+  "interests": ["technology", "business"],
+  "source": "website"
+}
+```
+
+**Example Response:**
+```json
+{
+  "message": "Successfully subscribed to newsletter",
+  "email": "user@example.com",
+  "status": "active"
+}
+```
+
+### POST `/newsletter/unsubscribe`
+Unsubscribe from newsletter
+
+**Example Request:**
+```bash
+POST /newsletter/unsubscribe
+Headers: {
+  "Content-Type": "application/json"
+}
+Body: {
+  "email": "user@example.com",
+  "reason": "Too many emails"
+}
+```
+
+**Example Response:**
+```json
+{
+  "message": "Successfully unsubscribed from newsletter",
+  "email": "user@example.com"
+}
+```
+
+### Admin Routes (Authentication Required)
+
+**Headers for all admin routes:**
+```javascript
+{
+  "Authorization": "Bearer your_jwt_token",
+  "Content-Type": "application/json"
+}
+```
+
+### GET `/newsletter/zoho-status`
+Get Zoho integration status
+
+**Example Request:**
+```bash
+GET /newsletter/zoho-status
+Headers: {
+  "Authorization": "Bearer your_jwt_token"
+}
+```
+
+**Example Response:**
+```json
+{
+  "status": "connected",
+  "lastSync": "2025-06-01T09:30:00.000Z",
+  "totalContacts": 1250,
+  "syncErrors": 0
+}
+```
+
+### GET `/newsletter`
+Get all newsletter subscribers
+
+**Example Request:**
+```bash
+GET /newsletter?page=1&limit=20&status=active&interests=technology
+Headers: {
+  "Authorization": "Bearer your_jwt_token"
+}
+```
+
+**Query Parameters:**
+- `page`: Page number (default: 1)
+- `limit`: Items per page (default: 20)
+- `status`: Filter by status (active, inactive, unsubscribed)
+- `interests`: Filter by interests
+- `search`: Search by email or name
+
+**Example Response:**
+```json
+{
+  "data": [
+    {
+      "id": "123",
+      "email": "user@example.com",
+      "firstName": "John",
+      "lastName": "Doe",
+      "status": "active",
+      "interests": ["technology", "business"],
+      "subscribedAt": "2025-06-01T10:00:00.000Z"
+    }
+  ],
+  "total": 1250,
+  "page": 1,
+  "limit": 20,
+  "pages": 63
+}
+```
+
+### GET `/newsletter/stats`
+Get newsletter statistics
+
+**Example Request:**
+```bash
+GET /newsletter/stats
+Headers: {
+  "Authorization": "Bearer your_jwt_token"
+}
+```
+
+**Example Response:**
+```json
+{
+  "totalSubscribers": 1250,
+  "activeSubscribers": 1180,
+  "unsubscribed": 70,
+  "newThisMonth": 45,
+  "topInterests": [
+    {"interest": "technology", "count": 800},
+    {"interest": "business", "count": 650}
+  ],
+  "growthRate": "3.6%"
+}
+```
+
+### GET `/newsletter/export`
+Export subscribers
+
+**Example Request:**
+```bash
+GET /newsletter/export?format=csv&status=active
+Headers: {
+  "Authorization": "Bearer your_jwt_token"
+}
+```
+
+**Query Parameters:**
+- `format`: Export format (csv, json)
+- `status`: Filter by status
+- `interests`: Filter by interests
+
+**Example Response:**
+```json
+{
+  "downloadUrl": "https://yourapp.com/downloads/subscribers-2025-06-01.csv",
+  "expiresAt": "2025-06-01T22:00:00.000Z",
+  "totalRecords": 1180
+}
+```
+
+### POST `/newsletter/bulk-import`
+Bulk import subscribers
+
+**Example Request:**
+```bash
+POST /newsletter/bulk-import
+Headers: {
+  "Authorization": "Bearer your_jwt_token",
+  "Content-Type": "application/json"
+}
+Body: {
+  "subscribers": [
+    {
+      "email": "user1@example.com",
+      "firstName": "John",
+      "lastName": "Doe",
+      "interests": ["technology"]
+    },
+    {
+      "email": "user2@example.com",
+      "firstName": "Jane",
+      "lastName": "Smith",
+      "interests": ["business", "marketing"]
+    }
+  ]
+}
+```
+
+**Example Response:**
+```json
+{
+  "message": "Bulk import completed",
+  "successful": 2,
+  "failed": 0,
+  "duplicates": 0,
+  "errors": []
+}
+```
+
+### POST `/newsletter/sync-zoho`
+Sync with Zoho
+
+**Example Request:**
+```bash
+POST /newsletter/sync-zoho
+Headers: {
+  "Authorization": "Bearer your_jwt_token",
+  "Content-Type": "application/json"
+}
+Body: {}
+```
+
+**Example Response:**
+```json
+{
+  "message": "Sync with Zoho completed successfully",
+  "synced": 1250,
+  "errors": 0,
+  "syncedAt": "2025-06-01T10:30:00.000Z"
+}
+```
+
+### GET `/newsletter/:id`
+Get specific subscriber
+
+**Example Request:**
+```bash
+GET /newsletter/123
+Headers: {
+  "Authorization": "Bearer your_jwt_token"
+}
+```
+
+**Example Response:**
+```json
+{
+  "id": "123",
+  "email": "user@example.com",
+  "firstName": "John",
+  "lastName": "Doe",
+  "status": "active",
+  "interests": ["technology", "business"],
+  "subscribedAt": "2025-06-01T10:00:00.000Z",
+  "lastActivity": "2025-06-01T09:30:00.000Z"
+}
+```
+
+### PATCH `/newsletter/:id`
+Update subscriber
+
+**Example Request:**
+```bash
+PATCH /newsletter/123
+Headers: {
+  "Authorization": "Bearer your_jwt_token",
+  "Content-Type": "application/json"
+}
+Body: {
+  "firstName": "Jonathan",
+  "interests": ["technology", "business", "startups"]
+}
+```
+
+**Example Response:**
+```json
+{
+  "message": "Subscriber updated successfully",
+  "id": "123",
+  "updatedFields": ["firstName", "interests"]
+}
+```
+
+### DELETE `/newsletter/:id`
+Delete subscriber
+
+**Example Request:**
+```bash
+DELETE /newsletter/123
+Headers: {
+  "Authorization": "Bearer your_jwt_token"
+}
+```
+
+**Response:** 204 No Content
+
+### PATCH `/newsletter/:id/reactivate`
+Reactivate subscriber
+
+**Example Request:**
+```bash
+PATCH /newsletter/123/reactivate
+Headers: {
+  "Authorization": "Bearer your_jwt_token",
+  "Content-Type": "application/json"
+}
+Body: {}
+```
+
+**Example Response:**
+```json
+{
+  "message": "Subscriber reactivated successfully",
+  "id": "123",
+  "status": "active"
+}
+```
+
+### POST `/newsletter/send-campaign`
+Send email campaign
+
+**Example Request:**
+```bash
+POST /newsletter/send-campaign
+Headers: {
+  "Authorization": "Bearer your_jwt_token",
+  "Content-Type": "application/json"
+}
+Body: {
+  "subject": "Weekly Tech Update",
+  "content": "<h1>Hello!</h1><p>Here's your weekly tech update...</p>",
+  "interests": ["technology"],
+  "isActive": true
+}
+```
+
+**Example Response:**
+```json
+{
+  "message": "Campaign sent successfully",
+  "recipientCount": 800,
+  "campaignId": "camp_123",
+  "sentAt": "2025-06-01T10:30:00.000Z"
+}
+```
+
+---
+
+## Authentication Notes
+
+### JWT Token Format
+```javascript
+// Headers for authenticated requests
+{
+  "Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c",
+  "Content-Type": "application/json"
+}
+```
+
+### Role Requirements
+- **Role 1**: Admin access (required for all admin endpoints)
+- **No Role**: Public access (subscription/unsubscription endpoints)
+
+### Error Responses
+All endpoints may return these error formats:
+
+```json
+{
+  "statusCode": 400,
+  "message": "Bad Request",
+  "error": "Validation failed"
+}
+```
+
+```json
+{
+  "statusCode": 401,
+  "message": "Unauthorized",
+  "error": "Invalid or missing authentication token"
+}
+```
+
+```json
+{
+  "statusCode": 403,
+  "message": "Forbidden",
+  "error": "Insufficient permissions"
+}
+```
+
+```json
+{
+  "statusCode": 500,
+  "message": "Internal Server Error",
+  "error": "Something went wrong"
+}
+```
